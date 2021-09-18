@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.my.fmall.manage.mapper.BaseAttrInfoMapper">
+<resultMap id="baseAttrInfoMap" type="com.my.fmall.bean.BaseAttrInfo" autoMapping="true">
+    <id property="id" column="id"></id>
+    <result property="attrName" column="attr_name"></result>
+    <result property="catalog3Id" column="catalog3_id"></result>
+    <collection property="attrValueList" ofType="com.my.fmall.bean.BaseAttrValue" autoMapping="true">
+        <id property="id" column="attr_value_id"></id>
+
+    </collection>
+</resultMap>
+
+<!--    List<BaseAttrInfo> getBaseAttrInfoListByCatalog3Id(String catalog3Id);-->
+    <select id="getBaseAttrInfoListByCatalog3Id" resultMap="baseAttrInfoMap">
+        SELECT
+            bai.id,
+            bai.attr_name,
+            bai.catalog3_id,
+            bav.id attr_value_id,
+            bav.value_name,
+            bav.attr_id
+        FROM
+            base_attr_info bai
+                INNER JOIN base_attr_value bav ON bai.id = bav.attr_id
+        WHERE
+            catalog3_id = #{0}
+    </select>
+</mapper>
