@@ -32,4 +32,6 @@ public class SpuSaleAttr implements Serializable {
 
     @Transient
     List<SpuSaleAttrValue> spuSaleAttrValueList;
+
+
 }

@@ -329,4 +329,32 @@ public class ManageServiceImpl implements ManageService {
         }
 
     }
+
+    /**
+     * 获取skuInfo,用于显示详情页
+     * @param skuId
+     * @return
+     */
+    @Override
+    public SkuInfo getSkuInfo(String skuId) {
+        SkuInfo skuInfo = skuInfoMapper.selectByPrimaryKey(skuId);
+        SkuImage skuImage = new SkuImage();
+        skuImage.setSkuId(skuId);
+        List<SkuImage> imageList = skuImageMapper.select(skuImage);
+        skuInfo.setSkuImageList(imageList);
+
+        return skuInfo;
+    }
+
+    /**
+     * 根据spuId,skuId 获取 spu全部商品销售属性
+     * 和 sku的商品属性
+     * @param skuInfo
+     * @return
+     */
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(SkuInfo skuInfo) {
+
+        return spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuInfo.getSpuId(),skuInfo.getId());
+    }
 }

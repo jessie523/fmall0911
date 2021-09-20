@@ -36,4 +36,8 @@ public interface ManageService {
     List<SpuSaleAttr> getSpuSaleAttr(String spuId);
 
     void saveSkuInfo(SkuInfo skuInfo);
+
+    SkuInfo getSkuInfo(String skuId);
+
+    List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(SkuInfo skuInfo);
 }
