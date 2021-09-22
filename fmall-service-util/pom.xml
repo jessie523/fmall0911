@@ -36,6 +36,7 @@
             <scope>runtime</scope>
         </dependency>
 
+<!--        redis-->
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>

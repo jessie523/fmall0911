@@ -1,11 +1,15 @@
 package com.my.fmall.manage.service.impl;
 
 import com.alibaba.dubbo.config.annotation.Service;
+import com.alibaba.fastjson.JSON;
 import com.my.fmall.bean.*;
+import com.my.fmall.config.RedisUtil;
+import com.my.fmall.manage.constant.ManageConst;
 import com.my.fmall.manage.mapper.*;
 import com.my.fmall0911.service.ManageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
@@ -57,6 +61,9 @@ public class ManageServiceImpl implements ManageService {
 
     @Autowired
     private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     /**
      * 获取一级分类
@@ -337,12 +344,37 @@ public class ManageServiceImpl implements ManageService {
      */
     @Override
     public SkuInfo getSkuInfo(String skuId) {
+//        Jedis jedis = redisUtil.getJedis();
+//        jedis.set("ok","没毛病");
+//        jedis.close();
+
+        Jedis jedis = redisUtil.getJedis();
+        String skuInfokey = ManageConst.SKUKEY_PREFIX + skuId + ManageConst.SKUKEY_SUFFIX;
+        SkuInfo skuInfo = null;
+        //      数据从缓存中取，如果取不到，则查询数据库，然后再将数据放到缓存中
+        if(jedis.exists(skuInfokey)){
+          String skuInfoJson = jedis.get(skuInfokey);
+          if(skuInfoJson != null && skuInfoJson.length() > 0){
+              //将数据转换成对象类型
+              skuInfo = JSON.parseObject(skuInfoJson,SkuInfo.class);
+          }
+        }else{
+             skuInfo = getSkuInfoDB(skuId);
+             //将最新的数据放入缓存中
+            String jsonString = JSON.toJSONString(skuInfo);
+            jedis.setex(skuInfokey,ManageConst.SKUKEY_TIMEOUT,jsonString);
+        }
+        jedis.close();
+
+        return skuInfo;
+    }
+
+    private SkuInfo getSkuInfoDB(String skuId) {
         SkuInfo skuInfo = skuInfoMapper.selectByPrimaryKey(skuId);
         SkuImage skuImage = new SkuImage();
         skuImage.setSkuId(skuId);
         List<SkuImage> imageList = skuImageMapper.select(skuImage);
         skuInfo.setSkuImageList(imageList);
-
         return skuInfo;
     }
 
@@ -356,5 +388,15 @@ public class ManageServiceImpl implements ManageService {
     public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(SkuInfo skuInfo) {
 
         return spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuInfo.getSpuId(),skuInfo.getId());
+    }
+
+    /**
+     *  获取sku属性值
+     * @param spuInfo
+     * @return
+     */
+    @Override
+    public List<SkuSaleAttrValue> getSkuSaleAttrValueListBySpu(String spuInfo) {
+        return skuSaleAttrValueMapper.selectSkuSaleAttrValueListBySpu(spuInfo);
     }
 }

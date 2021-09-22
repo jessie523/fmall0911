@@ -219,6 +219,9 @@
 						  
 						<div class="box-attr-3">
 						<br/>
+							<!--隐藏域-->
+							<input id="valuesSku" type="hidden"  th:value= " ${valuesSkuJson}"  />
+							<input id="skuId" type="hidden"  th:value= " ${skuInfo.id}"  />
 							<div class="box-attr-2 clear" th:each="spuSaleAttrList:${spuSaleAttrList}" >
 								<dl>
 									<dt th:text="${spuSaleAttrList.saleAttrName}">选择颜色</dt>
