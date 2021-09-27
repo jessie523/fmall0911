@@ -42,4 +42,6 @@ public interface ManageService {
     List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(SkuInfo skuInfo);
 
     List<SkuSaleAttrValue> getSkuSaleAttrValueListBySpu(String spuInfo);
+
+    List<BaseAttrInfo> getAttrList(List<String> attrValueIdList);
 }

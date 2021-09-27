@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.my.fmall.bean.SkuInfo;
 import com.my.fmall.bean.SkuSaleAttrValue;
 import com.my.fmall.bean.SpuSaleAttr;
+import com.my.fmall0911.service.ListService;
 import com.my.fmall0911.service.ManageService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,8 @@ public class ItemController {
 
     @Reference
     private ManageService manageService;
+    @Reference
+    private ListService listService;
 
     @RequestMapping("{skuId}.html")
     public String skuInfoPage(@PathVariable("skuId")String skuId, HttpServletRequest request){
@@ -69,6 +72,9 @@ public class ItemController {
 
         request.setAttribute("valuesSkuJson",valuesSkuJson);
         request.setAttribute("spuSaleAttrList",spuSaleAttrList);
+
+        //点击详情页一次，热度增加一
+        listService.incrHotScore(skuId);
 
         return "item";
     }

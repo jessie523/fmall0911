@@ -15,7 +15,8 @@
         <module>../fmall-web-util</module>
         <module>../fmall-usermanage</module>
         <module>../fmall-order-web</module>
-
+        <module>../fmall-list-service</module>
+        <module>../fmall-list-web</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -137,22 +138,20 @@
                 <artifactId>jedis</artifactId>
                 <version>${jedis.version}</version>
             </dependency>
-            <!--no  javascript测试框架-->
-<!--            <dependency>-->
-<!--                <groupId>io.searchbox</groupId>-->
-<!--                <artifactId>jest</artifactId>-->
-<!--                <version>${jest.version}</version>-->
-<!--            </dependency>-->
+            <!--es-->
+            <dependency>
+                <groupId>io.searchbox</groupId>
+                <artifactId>jest</artifactId>
+                <version>${jest.version}</version>
+            </dependency>
 
 
-
-            <!-- https://mvnrepository.com/artifact/net.java.dev.jna/jna -->
             <!--JNA提供一组Java工具类用于在运行期动态访问系统本地库-->
-<!--            <dependency>-->
-<!--                <groupId>net.java.dev.jna</groupId>-->
-<!--                <artifactId>jna</artifactId>-->
-<!--                <version>${jna.version}</version>-->
-<!--            </dependency>-->
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
 
 
 

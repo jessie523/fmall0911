@@ -7,6 +7,7 @@ import com.my.fmall.config.RedisUtil;
 import com.my.fmall.manage.constant.ManageConst;
 import com.my.fmall.manage.mapper.*;
 import com.my.fmall0911.service.ManageService;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
@@ -64,6 +65,7 @@ public class ManageServiceImpl implements ManageService {
 
     @Autowired
     private RedisUtil redisUtil;
+
 
     /**
      * 获取一级分类
@@ -340,33 +342,57 @@ public class ManageServiceImpl implements ManageService {
     /**
      * 获取skuInfo,用于显示详情页
      * @param skuId
+     * 用Jedis 分布式锁结局 缓存击穿
      * @return
      */
     @Override
     public SkuInfo getSkuInfo(String skuId) {
-//        Jedis jedis = redisUtil.getJedis();
-//        jedis.set("ok","没毛病");
-//        jedis.close();
-
+        //获取Jedis
         Jedis jedis = redisUtil.getJedis();
-        String skuInfokey = ManageConst.SKUKEY_PREFIX + skuId + ManageConst.SKUKEY_SUFFIX;
         SkuInfo skuInfo = null;
-        //      数据从缓存中取，如果取不到，则查询数据库，然后再将数据放到缓存中
-        if(jedis.exists(skuInfokey)){
-          String skuInfoJson = jedis.get(skuInfokey);
-          if(skuInfoJson != null && skuInfoJson.length() > 0){
-              //将数据转换成对象类型
-              skuInfo = JSON.parseObject(skuInfoJson,SkuInfo.class);
-          }
-        }else{
-             skuInfo = getSkuInfoDB(skuId);
-             //将最新的数据放入缓存中
-            String jsonString = JSON.toJSONString(skuInfo);
-            jedis.setex(skuInfokey,ManageConst.SKUKEY_TIMEOUT,jsonString);
+        //定义key：见名知意：sku:skuId:info
+        try {
+            String skuKey = ManageConst.SKUKEY_PREFIX+skuId+ManageConst.SKUKEY_SUFFIX;
+            //获取数据
+            String skuJson = jedis.get(skuKey);
+            if(skuJson == null || skuJson.length() == 0){
+                //试着加锁
+                System.out.println("缓存中没有数据");
+                //执行set命令
+                //定义上锁的key=sku:skuId:lock
+                String skuLockKey = ManageConst.SKUKEY_PREFIX+skuId+ManageConst.SKULOCK_SUFFIX;
+                String lockKey = jedis.set(skuLockKey,"good","NX","PX",ManageConst.SKULOCK_EXPIRE_PX);
+                if("OK".equals(lockKey)){
+                    //此时加锁成功
+                    skuInfo = getSkuInfoDB(skuId);
+                    //将数据放入缓存
+                    //将对象转换成字符串
+                    String skuRedisStr = JSON.toJSONString(skuInfo);
+                    String setex = jedis.setex(skuKey, ManageConst.SKUKEY_TIMEOUT, skuRedisStr);
+                    System.out.println("setex:"+setex);
+                    //删除锁
+                    jedis.del(skuLockKey);
+                    return skuInfo;
+                }else{
+                    //等待
+                    Thread.sleep(1000);
+                    //调用getSkuInfo();
+                    return  getSkuInfo(skuId);
+                }
+            }else{
+                skuInfo = JSON.parseObject(skuJson,SkuInfo.class);
+                return skuInfo;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if(jedis != null){
+                jedis.close();
+            }
         }
-        jedis.close();
 
-        return skuInfo;
+        return getSkuInfoDB(skuId);
+
     }
 
     private SkuInfo getSkuInfoDB(String skuId) {
@@ -375,6 +401,13 @@ public class ManageServiceImpl implements ManageService {
         skuImage.setSkuId(skuId);
         List<SkuImage> imageList = skuImageMapper.select(skuImage);
         skuInfo.setSkuImageList(imageList);
+        
+        //查询平台属性
+        SkuAttrValue skuAttrValue = new SkuAttrValue();
+        skuAttrValue.setSkuId(skuId);
+        List<SkuAttrValue> skuAttrValues = skuAttrValueMapper.select(skuAttrValue);
+        //将平台属性装配到skuInfo
+        skuInfo.setSkuAttrValueList(skuAttrValues);
         return skuInfo;
     }
 
@@ -398,5 +431,17 @@ public class ManageServiceImpl implements ManageService {
     @Override
     public List<SkuSaleAttrValue> getSkuSaleAttrValueListBySpu(String spuInfo) {
         return skuSaleAttrValueMapper.selectSkuSaleAttrValueListBySpu(spuInfo);
+    }
+
+    /**
+     * 根据平台属性值ID，获取平台属性列表
+     * @param attrValueIdList
+     * @return
+     */
+    @Override
+    public List<BaseAttrInfo> getAttrList(List<String> attrValueIdList) {
+         String attrValueIds = StringUtils.join(attrValueIdList.toArray(),",");
+        List<BaseAttrInfo> attrInfoList= baseAttrInfoMapper.selectAttrInfoByIds(attrValueIds);
+        return attrInfoList;
     }
 }
