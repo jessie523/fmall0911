@@ -7,8 +7,14 @@ com\my\fmall\bean\SpuInfo.class
 com\my\fmall\bean\BaseSaleAttr.class
 com\my\fmall\bean\BaseAttrInfo.class
 com\my\fmall\bean\BaseCatalog2.class
+com\my\fmall\bean\SkuImage.class
+com\my\fmall\bean\SkuSaleAttrValue.class
+com\my\fmall\bean\SkuAttrValue.class
 com\my\fmall\bean\UserAddress.class
 com\my\fmall\bean\UserInfo.class
+com\my\fmall\bean\SkuInfo.class
 com\my\fmall\bean\SpuSaleAttr.class
+com\my\fmall\bean\SkuLsAttrValue.class
+com\my\fmall\bean\SkuLsInfo.class
 com\my\fmall\bean\BaseAttrValue.class
 com\my\fmall\bean\SkuLsParams.class

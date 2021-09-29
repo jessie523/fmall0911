@@ -18,4 +18,8 @@ public interface UserService {
 
     //根据userId，查询用户地址列表
     public List<UserAddress> getUserAddressList(String userId);
+
+    UserInfo login(UserInfo userInfo);
+
+    UserInfo verify(String userId);
 }

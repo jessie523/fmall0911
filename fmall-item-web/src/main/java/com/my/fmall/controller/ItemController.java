@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.my.fmall.bean.SkuInfo;
 import com.my.fmall.bean.SkuSaleAttrValue;
 import com.my.fmall.bean.SpuSaleAttr;
+import com.my.fmall.config.LoginRequie;
 import com.my.fmall0911.service.ListService;
 import com.my.fmall0911.service.ManageService;
 import org.springframework.stereotype.Controller;
@@ -29,6 +30,7 @@ public class ItemController {
     @Reference
     private ListService listService;
 
+    @LoginRequie //测试需求：用户在访问商品详情的时候，必须登录
     @RequestMapping("{skuId}.html")
     public String skuInfoPage(@PathVariable("skuId")String skuId, HttpServletRequest request){
 //        sku基本信息

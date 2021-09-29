@@ -1,0 +1,5 @@
+com\my\fmall\config\CookieUtil.class
+com\my\fmall\config\WebConst.class
+com\my\fmall\config\WebMvcConfiguration.class
+com\my\fmall\config\LoginRequie.class
+com\my\fmall\config\AuthInterceptor.class
