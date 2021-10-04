@@ -17,6 +17,7 @@
         <module>../fmall-order-web</module>
         <module>../fmall-list-service</module>
         <module>../fmall-list-web</module>
+        <module>../fmall-cart-web</module>
     </modules>
 
     <packaging>pom</packaging>

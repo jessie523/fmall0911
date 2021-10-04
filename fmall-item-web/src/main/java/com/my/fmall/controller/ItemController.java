@@ -30,7 +30,7 @@ public class ItemController {
     @Reference
     private ListService listService;
 
-    @LoginRequie //测试需求：用户在访问商品详情的时候，必须登录
+   // @LoginRequie //测试需求：用户在访问商品详情的时候，必须登录
     @RequestMapping("{skuId}.html")
     public String skuInfoPage(@PathVariable("skuId")String skuId, HttpServletRequest request){
 //        sku基本信息
