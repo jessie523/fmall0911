@@ -14,6 +14,8 @@ import java.util.List;
  */
 @Data
 public class SkuInfo implements Serializable {
+
+    private static final long serialVersionUID = -4041640134923118180L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column

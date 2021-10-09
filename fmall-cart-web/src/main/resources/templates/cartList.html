@@ -86,7 +86,7 @@
 
                     <div>
                         <ol>
-                            <li><input type="checkbox"   class="check"   onchange="checkSku(this)"  /></li>
+                            <li><input type="checkbox"   class="check" th:value="${cartInfo.skuId}" th:checked="(${cartInfo.isChecked}==1)?true:false"  onchange="checkSku(this)"  /></li>
                             <li>
                                 <dt><img   src="img\shop1.jpg" alt=""></dt>
                                 <dd  onclick="toItem(1)">
@@ -241,6 +241,7 @@
     }
 
     function checkSku( chkbox){
+
         console.log($(chkbox));
        var skuId= $(chkbox).attr("value");
        var checked=$(chkbox).prop("checked");

@@ -13,6 +13,9 @@ import java.io.Serializable;
  */
 @Data
 public class UserInfo implements Serializable {
+
+
+    private static final long serialVersionUID = -8442017299726245963L;
     @Id
     @Column
     private String id;

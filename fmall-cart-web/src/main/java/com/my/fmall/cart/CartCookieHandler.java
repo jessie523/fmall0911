@@ -91,4 +91,29 @@ public class CartCookieHandler {
 
         return cartInfoList;
     }
+
+    public void deleteCartCookie(HttpServletRequest request, HttpServletResponse response) {
+
+        CookieUtil.deleteCookie(request,response,cookieCartName);
+    }
+
+
+    public void checkCart(HttpServletRequest request, HttpServletResponse response, String skuId, String isChecked) {
+        /*
+        * 取出cookie中的List
+        * 循环比较，找到要修改的sku
+        * 更新isChecked的值
+        * 放回到cookie中
+        * */
+        List<CartInfo> cartList = getCartList(request);
+        for (CartInfo cartInfo : cartList) {
+            if(cartInfo.getSkuId().equals(skuId)){
+                cartInfo.setIsChecked(isChecked);
+            }
+        }
+
+        String newCartJson = JSON.toJSONString(cartList);
+        CookieUtil.setCookie(request,response,cookieCartName,newCartJson,COOKIE_CART_MAXAGE,true);
+
+    }
 }
