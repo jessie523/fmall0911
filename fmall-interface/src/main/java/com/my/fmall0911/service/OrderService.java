@@ -17,4 +17,6 @@ public interface OrderService {
     void delTradeNo(String userId);
 
     boolean checkStock(String skuId, Integer skuNum);
+
+    OrderInfo getOrderInfo(String orderId);
 }

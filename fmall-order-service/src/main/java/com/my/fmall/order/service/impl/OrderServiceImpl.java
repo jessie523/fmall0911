@@ -121,4 +121,17 @@ public class OrderServiceImpl implements OrderService {
             return false;
         }
     }
+
+    @Override
+    public OrderInfo getOrderInfo(String orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectByPrimaryKey(orderId);
+
+        //将orderDetail放入OrderInfo
+        OrderDetail orderDetail = new OrderDetail();
+        orderDetail.setOrderId(orderId);
+
+        orderInfo.setOrderDetailList(orderDetailMapper.select(orderDetail));
+
+        return orderInfo;
+    }
 }
