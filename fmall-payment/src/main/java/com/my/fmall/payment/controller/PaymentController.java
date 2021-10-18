@@ -106,6 +106,8 @@ public class PaymentController {
 
         response.setContentType("text/html;charset=UTF-8");
 
+        //调用延迟队列
+        paymentService.sendDelayPaymentResult(paymentInfo.getOutTradeNo(),15,3);// 每隔15秒调用一次，一共调用三次
         return form;
     }
 
@@ -149,6 +151,9 @@ public class PaymentController {
                 paymentInfoUPD.setPaymentStatus(PaymentStatus.PAID);
                 paymentInfoUPD.setCallbackTime(new Date());
                 paymentService.updatePaymentInfo(out_trade_no,paymentInfoUPD);
+
+                //利用消息队列，通知订单模块，支付成功
+                paymentService.sendPaymentResult(paymentInfo,"success");
                 return "success";
             }
         }else{
@@ -166,5 +171,44 @@ public class PaymentController {
     public String refund(String orderId){
          boolean res = paymentService.refund(orderId);
          return res + "";
+    }
+
+
+    @GetMapping("/sendPaymentResult")
+    @ResponseBody
+    public String sendPaymentResult(){
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setOrderId("95");
+
+        //利用消息队列，通知订单模块，支付成功
+        paymentService.sendPaymentResult(paymentInfo,"success");
+
+        return "success";
+    }
+
+    // 查询支付交易是否成功！需要根据orderId 查询！
+    // http://payment.gmall.com/queryPaymentResult?orderId=101
+    @GetMapping("/queryPaymentResult")
+    @ResponseBody
+    public String queryPaymentResult(String orderId){
+        // 必须通过orderId 查询paymentInfo
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setOrderId(orderId);
+        //有out_trade_no
+        PaymentInfo paymentInfoQuery = paymentService.getPaymentInfo(paymentInfo);
+        // 该对象中必须有out_trade_no
+        boolean flag = paymentService.checkPayment(paymentInfoQuery);
+        return flag+"";
+    }
+
+    @ResponseBody
+    @GetMapping("/test/{outTradeNo}")
+    public void testDelayQueue(@PathVariable("outTradeNo")String outTradeNo){
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setOutTradeNo(outTradeNo);
+
+        //调用延迟队列
+        paymentService.sendDelayPaymentResult(paymentInfo.getOutTradeNo(),15,3);// 每隔15秒调用一次，一共调用三次
+
     }
 }

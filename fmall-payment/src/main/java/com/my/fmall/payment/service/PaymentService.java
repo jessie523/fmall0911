@@ -16,4 +16,10 @@ public interface PaymentService {
     void updatePaymentInfo(String out_trade_no, PaymentInfo paymentInfoUPD);
 
     boolean refund(String orderId);
+
+    void sendPaymentResult(PaymentInfo paymentInfo, String success);
+
+    boolean checkPayment(PaymentInfo paymentInfoQuery);
+
+    public void sendDelayPaymentResult(String outTradeNo,int delaySec,int checkCount);
 }

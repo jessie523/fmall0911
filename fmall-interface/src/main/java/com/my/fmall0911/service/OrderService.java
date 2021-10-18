@@ -1,6 +1,9 @@
 package com.my.fmall0911.service;
 
 import com.my.fmall.bean.OrderInfo;
+import com.my.fmall.enums.ProcessStatus;
+
+import java.util.List;
 
 /**
  * author:zxy
@@ -19,4 +22,12 @@ public interface OrderService {
     boolean checkStock(String skuId, Integer skuNum);
 
     OrderInfo getOrderInfo(String orderId);
+
+    void updateOrderStatus(String orderId, ProcessStatus paid);
+
+    void sendOrderStatus(String orderId);
+
+    List<OrderInfo> getExpiredOrderList();
+
+    void execExpiredOrder(OrderInfo orderInfo);
 }

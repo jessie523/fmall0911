@@ -1,18 +1,28 @@
 package com.my.fmall.order.service.impl;
 
+import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.config.annotation.Service;
+import com.alibaba.fastjson.JSON;
 import com.my.fmall.bean.OrderDetail;
 import com.my.fmall.bean.OrderInfo;
+import com.my.fmall.config.ActiveMQUtil;
 import com.my.fmall.config.RedisUtil;
+import com.my.fmall.enums.ProcessStatus;
 import com.my.fmall.order.mapper.OrderDetailMapper;
 import com.my.fmall.order.mapper.OrderInfoMapper;
 import com.my.fmall.util.HttpClientUtil;
 import com.my.fmall0911.service.OrderService;
+import com.my.fmall0911.service.IPaymentService;
+import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
+import tk.mybatis.mapper.entity.Example;
 
+import javax.jms.*;
+import javax.jms.Queue;
 import java.util.*;
 
 /**
@@ -28,6 +38,12 @@ public class OrderServiceImpl implements OrderService {
     private OrderDetailMapper orderDetailMapper;
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private ActiveMQUtil activeMQUtil;
+
+    @Reference
+    private IPaymentService paymentService;
 
     @Transactional
     @Override
@@ -133,5 +149,111 @@ public class OrderServiceImpl implements OrderService {
         orderInfo.setOrderDetailList(orderDetailMapper.select(orderDetail));
 
         return orderInfo;
+    }
+
+    @Override
+    public void updateOrderStatus(String orderId, ProcessStatus paid) {
+        // update orderInfo set processStatus = paid , ordersStatus = paid where id = orderId;
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setId(orderId);
+        orderInfo.setProcessStatus(paid);
+        orderInfo.setOrderStatus(paid.getOrderStatus());
+        orderInfoMapper.updateByPrimaryKeySelective(orderInfo);
+    }
+
+    /**
+     * 减少库存
+     * @param orderId
+     */
+    @Override
+    public void sendOrderStatus(String orderId) {
+        //创建消息工厂
+        Connection connection = activeMQUtil.getConnection();
+        String orderInfoJson = initWareOrder(orderId);
+        try {
+            connection.start();
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            //创建队列
+            Queue queue = session.createQueue("ORDER_RESULT_QUEUE");
+            //创建消息提供者
+            MessageProducer producer = session.createProducer(queue);
+            //创建消息对象
+            ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
+            //orderInfo组成json字符串
+            textMessage.setText(orderInfoJson);
+
+            producer.send(textMessage);
+            session.commit();
+
+            //关闭
+            connection.close();
+            producer.close();
+            session.close();
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+
+    }
+    
+    private String initWareOrder(String orderId) {
+        
+        //根据orderId查询orderInfo
+        OrderInfo orderInfo = getOrderInfo(orderId);
+        //将orderInfo中有用的信息保存到map中
+        Map<String,Object> map = initWareOrder(orderInfo);
+        // 将map 转换为json  字符串！
+        return JSON.toJSONString(map);
+    }
+
+    private Map<String, Object> initWareOrder(OrderInfo orderInfo) {
+
+        HashMap<String, Object> map = new HashMap<>();
+        // 给map 的key 赋值！
+        map.put("orderId",orderInfo.getId());
+        map.put("consignee", orderInfo.getConsignee());
+        map.put("consigneeTel",orderInfo.getConsigneeTel());
+        map.put("orderComment",orderInfo.getOrderComment());
+        map.put("orderBody","测试用例");
+        map.put("deliveryAddress",orderInfo.getDeliveryAddress());
+        map.put("paymentWay","2");
+        map.put("wareId",orderInfo.getWareId()); // 仓库Id
+
+        List<OrderDetail> orderDetailList = orderInfo.getOrderDetailList();
+        ArrayList<Object> arrayList = new ArrayList<>();
+        for (OrderDetail orderDetail : orderDetailList) {
+            HashMap<String, Object> map1 = new HashMap<>();
+
+            map1.put("skuId",orderDetail.getSkuId());
+            map1.put("skuNum",orderDetail.getSkuNum());
+            map1.put("skuName",orderDetail.getSkuName());
+            arrayList.add(map1);
+        }
+        map.put("details",arrayList);
+        return map;
+    }
+
+    /**
+     * 查询所有过期订单（当前时间> 过期时间 and 当前订单状态为未支付）
+     * @return
+     */
+    @Override
+    public List<OrderInfo> getExpiredOrderList() {
+
+        Example example = new Example(OrderInfo.class);
+        example.createCriteria().andLessThan("expireTime",new Date()).andEqualTo("processStatus",ProcessStatus.UNPAID);
+
+        List<OrderInfo> orderInfoList = orderInfoMapper.selectByExample(example);
+        return orderInfoList;
+    }
+
+    @Async//多线程实现异步并发
+    @Override
+    public void execExpiredOrder(OrderInfo orderInfo) {
+
+        //将订单状态改为关闭
+        updateOrderStatus(orderInfo.getId(),ProcessStatus.CLOSED);
+
+        //关闭paymentInfo
+        paymentService.closePayment(orderInfo.getId());
     }
 }
