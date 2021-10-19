@@ -1,6 +1,7 @@
 package com.my.fmall.order.controller;
 
 import com.alibaba.dubbo.config.annotation.Reference;
+import com.alibaba.fastjson.JSON;
 import com.my.fmall.bean.*;
 import com.my.fmall.config.LoginRequie;
 import com.my.fmall.enums.OrderStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * author:zxy
@@ -148,5 +150,27 @@ public class OrderController {
         //删除流水号
         orderService.delTradeNo(userId);
         return "redirect://payment.gmall.com/index?orderId=" + orderId;
+    }
+
+
+    //http://order.gmall.com/orderSplit?orderId=xxx&wareSkuMap=xxx
+    @PostMapping("/orderSplit")
+    @ResponseBody
+    public String orderSplit(HttpServletRequest request){
+       String orderId = request.getParameter("orderId");
+       String wareSkuMap = request.getParameter("wareSkuMap");
+
+       //返回子订单集合
+        List<OrderInfo> orderInfoList =orderService.orderSplit(orderId,wareSkuMap);
+
+        //创建一个集合来存储map
+        ArrayList<Object> arrayList = new ArrayList<>();
+        //循环遍历
+        for (OrderInfo orderInfo : orderInfoList) {
+            //将orderInfo变成map
+            Map map = orderService.initWareOrder(orderInfo);
+            arrayList.add(map);
+        }
+        return JSON.toJSONString(arrayList);
     }
 }

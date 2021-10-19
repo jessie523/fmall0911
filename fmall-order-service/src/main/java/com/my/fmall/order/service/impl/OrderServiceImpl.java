@@ -15,6 +15,7 @@ import com.my.fmall0911.service.OrderService;
 import com.my.fmall0911.service.IPaymentService;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
@@ -194,8 +195,9 @@ public class OrderServiceImpl implements OrderService {
         }
 
     }
-    
-    private String initWareOrder(String orderId) {
+
+    @Override
+    public String initWareOrder(String orderId) {
         
         //根据orderId查询orderInfo
         OrderInfo orderInfo = getOrderInfo(orderId);
@@ -205,7 +207,8 @@ public class OrderServiceImpl implements OrderService {
         return JSON.toJSONString(map);
     }
 
-    private Map<String, Object> initWareOrder(OrderInfo orderInfo) {
+    @Override
+    public Map<String, Object> initWareOrder(OrderInfo orderInfo) {
 
         HashMap<String, Object> map = new HashMap<>();
         // 给map 的key 赋值！
@@ -255,5 +258,80 @@ public class OrderServiceImpl implements OrderService {
 
         //关闭paymentInfo
         paymentService.closePayment(orderInfo.getId());
+    }
+
+    /**
+     * 根据orderId 和 商品仓库信息 ：查询子订单
+     * @param orderId
+     * @param wareSkuMap
+     * @return
+     */
+    @Override
+    public List<OrderInfo> orderSplit(String orderId, String wareSkuMap) {
+        /*
+        * 1 获取原始订单
+        * 2 将wareSkuMap 转换成我们能操作的对象
+        * 3 创建新的子订单
+        * 4 给子订单赋值，并保存到数据库中
+        * 5 将子订单 添加到集合中
+        * 6 更新原始订单状态
+        *
+        * */
+
+        List<OrderInfo> subOrderInfoList = new ArrayList<>();
+
+        //获取原始订单
+        OrderInfo orderInfoOrigin = getOrderInfo(orderId);
+        //[{"wareId":"1","skuIds":["2","10"]},{"wareId":"2","skuIds":["3"]}]
+        List<Map> maps = JSON.parseArray(wareSkuMap, Map.class);
+
+        if(maps != null){
+            //循环遍历集合
+            for (Map map : maps) {
+                String wareId = (String)map.get("wareId");
+                //获取商品Id
+                List<String> skuIds = (List<String>)map.get("skuIds");
+                //创建新的子订单
+                OrderInfo subOrderInfo = new OrderInfo();
+                //将原始订单的数据 拷贝到新的子订单
+                BeanUtils.copyProperties(orderInfoOrigin,subOrderInfo);
+                subOrderInfo.setId(null);//ID必须为null
+                subOrderInfo.setWareId(wareId);
+                subOrderInfo.setParentOrderId(orderId);
+
+                //价格：获取到原始订单的明细
+                List<OrderDetail> orderDetailList = orderInfoOrigin.getOrderDetailList();
+
+                // 声明一个新的子订单明细集合
+                ArrayList<OrderDetail> subOrderDetailArrayList = new ArrayList<>();
+                //原始的订单明细商品id
+                for (OrderDetail orderDetail : orderDetailList) {
+                    //仓库对应的商品Id
+                    for(String skuId:skuIds){
+                        if(skuId.equals(orderDetail.getSkuId())){
+                             orderDetail.setOrderId(null);
+                            subOrderDetailArrayList.add(orderDetail);
+                        }
+                    }
+                }
+
+                //将新的子订单集合 放入子订单中
+                subOrderInfo.setOrderDetailList(subOrderDetailArrayList);
+
+                //计算价格
+                subOrderInfo.sumTotalAmount();
+                //保存到数据库中
+                saveOrder(subOrderInfo);
+                // 将新的子订单添加到集合中
+                subOrderInfoList.add(subOrderInfo);
+
+
+            }
+
+        }
+
+        updateOrderStatus(orderId,ProcessStatus.SPLIT);
+
+        return subOrderInfoList;
     }
 }

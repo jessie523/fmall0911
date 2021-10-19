@@ -4,6 +4,7 @@ import com.my.fmall.bean.OrderInfo;
 import com.my.fmall.enums.ProcessStatus;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * author:zxy
@@ -30,4 +31,10 @@ public interface OrderService {
     List<OrderInfo> getExpiredOrderList();
 
     void execExpiredOrder(OrderInfo orderInfo);
+
+    List<OrderInfo> orderSplit(String orderId, String wareSkuMap);
+
+    String initWareOrder(String orderId);
+
+    Map<String, Object> initWareOrder(OrderInfo orderInfo);
 }
